@@ -641,7 +641,8 @@
           '<div class="row"><span>Nombre</span><span>' + escapeHtml(c.nombre||'') + '</span></div>' +
           '<div class="row"><span>Identificación</span><span>' + escapeHtml((c.tipo_identificacion||'') + ' ' + (c.numero_identificacion||'')) + '</span></div>' +
           '<div class="row"><span>Teléfono</span><span>' + escapeHtml(c.telefono||'') + '</span></div>' +
-          '<div class="row"><span>Ciudad</span><span>' + escapeHtml(c.ciudad||'') + '</span></div>';
+          '<div class="row"><span>Ciudad</span><span>' + escapeHtml(c.ciudad||'') + '</span></div>' +
+          '<div class="row"><span>Talla habitual</span><span>' + escapeHtml(c.talla||'-') + '</span></div>';
         document.getElementById('clienteEncontradoWrap').style.display = 'block';
       } else if (data && data.status === 'ok'){
         statusEl.innerHTML = '<div class="status-banner err">No se encontró ningún cliente con ese dato. Puedes continuar manualmente.</div>';
