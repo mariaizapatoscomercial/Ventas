@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Datos de compra</title>
+<meta name="theme-color" content="#B5495B">
+<style>
+  :root{
+    --rose:#B5495B;
+    --rose-deep:#7A2E3D;
+    --cream:#FBF6F3;
+    --paper:#FFFFFF;
+    --ink:#2B2320;
+    --ink-soft:#7A6E68;
+    --line:#EADFD9;
+    --ok:#3F7D4F;
+    --ok-bg:#E7F2E9;
+    --err:#B5493F;
+    --err-bg:#FBEBE8;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);
+    font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;min-height:100%;}
+  #app{max-width:460px;margin:0 auto;padding:32px 20px 50px;}
+  h1{font-size:22px;color:var(--rose-deep);margin:0 0 6px;}
+  p.sub{color:var(--ink-soft);font-size:15px;margin:0 0 26px;line-height:1.5;}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:22px 20px;}
+  label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:5px;margin-top:16px;}
+  label:first-of-type{margin-top:0;}
+  input, select{
+    width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;
+    font-size:16px;font-family:inherit;color:var(--ink);background:var(--paper);
+  }
+  input:focus, select:focus{outline:none;border-color:var(--rose);}
+  .big-btn{
+    background:var(--rose);color:#fff;border:none;border-radius:var(--radius);
+    padding:16px 20px;font-size:16.5px;font-weight:700;cursor:pointer;width:100%;margin-top:24px;
+  }
+  .big-btn:disabled{opacity:0.6;}
+  .status-banner{border-radius:12px;padding:14px 16px;font-size:14.5px;margin-top:16px;}
+  .status-banner.ok{background:var(--ok-bg);color:var(--ok);}
+  .status-banner.err{background:var(--err-bg);color:var(--err);}
+  .success-screen{display:none;text-align:center;padding:60px 10px;}
+  .success-screen.active{display:block;}
+  .success-screen h1{margin-bottom:10px;}
+  .brand{text-align:center;color:var(--ink-soft);font-size:13px;margin-bottom:20px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="brand">Registro de datos de compra</div>
+
+  <div id="formScreen">
+    <h1>Antes de confirmar tu pedido</h1>
+    <p class="sub">Por favor completa tus datos para poder registrar tu compra correctamente.</p>
+    <div class="card">
+      <label>Tipo de identificación</label>
+      <select id="tipo_identificacion">
+        <option value="Cédula de ciudadanía">Cédula de ciudadanía</option>
+        <option value="Cédula de extranjería">Cédula de extranjería</option>
+        <option value="NIT">NIT</option>
+        <option value="Pasaporte">Pasaporte</option>
+        <option value="Otro">Otro</option>
+      </select>
+
+      <label>Número de identificación</label>
+      <input type="text" id="numero_identificacion" inputmode="numeric" placeholder="Ej: 1015...">
+
+      <label>Nombre completo</label>
+      <input type="text" id="nombre" placeholder="Nombre y apellido">
+
+      <label>Teléfono</label>
+      <input type="tel" id="telefono" placeholder="Ej: 3001234567">
+
+      <label>Correo electrónico</label>
+      <input type="email" id="correo" placeholder="tucorreo@ejemplo.com">
+
+      <label>Dirección</label>
+      <input type="text" id="direccion" placeholder="Calle, número, barrio">
+
+      <label>Ciudad</label>
+      <input type="text" id="ciudad" placeholder="Ciudad donde vives">
+    </div>
+
+    <button class="big-btn" id="btnEnviar">Enviar mis datos</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="success-screen" id="successScreen">
+    <h1>&#10004; ¡Listo!</h1>
+    <p class="sub">Tus datos quedaron registrados. Ya puedes volver a WhatsApp, tu pedido continúa normalmente.</p>
+  </div>
+
+</div>
+
+<script>
+  // Pega aquí la misma URL del Apps Script y la misma clave que usa la app de ventas.
+  var APPS_SCRIPT_URL = 'PEGA_AQUI_LA_URL_DEL_APPS_SCRIPT';
+  var TOKEN = 'PEGA_AQUI_LA_MISMA_CLAVE_DE_CODE_GS';
+
+  document.getElementById('btnEnviar').addEventListener('click', function(){
+    var campos = ['tipo_identificacion','numero_identificacion','nombre','telefono','correo','direccion','ciudad'];
+    var datos = { token: TOKEN, accion: 'registrar_cliente' };
+    var faltante = null;
+
+    campos.forEach(function(id){
+      var val = document.getElementById(id).value.trim();
+      datos[id] = val;
+      if (!val && !faltante) faltante = id;
+    });
+
+    var statusEl = document.getElementById('status');
+    if (faltante){
+      statusEl.innerHTML = '<div class="status-banner err">Por favor completa todos los campos antes de enviar.</div>';
+      return;
+    }
+
+    var btn = document.getElementById('btnEnviar');
+    btn.disabled = true;
+    statusEl.innerHTML = '<div class="status-banner ok">Enviando...</div>';
+
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(datos)
+    }).then(function(res){ return res.json(); })
+      .then(function(data){
+        if (data && data.status === 'ok'){
+          document.getElementById('formScreen').style.display = 'none';
+          document.getElementById('successScreen').classList.add('active');
+        } else {
+          btn.disabled = false;
+          statusEl.innerHTML = '<div class="status-banner err">' + (data && data.message ? data.message : 'No se pudo enviar, intenta de nuevo.') + '</div>';
+        }
+      }).catch(function(){
+        btn.disabled = false;
+        statusEl.innerHTML = '<div class="status-banner err">Sin conexión a internet. Verifica tu señal e intenta de nuevo.</div>';
+      });
+  });
+</script>
+</body>
+</html>

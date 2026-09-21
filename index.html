@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Registro de Ventas por Voz</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#B5495B">
+<style>
+  :root{
+    --rose:#B5495B;
+    --rose-deep:#7A2E3D;
+    --cream:#FBF6F3;
+    --paper:#FFFFFF;
+    --ink:#2B2320;
+    --ink-soft:#7A6E68;
+    --line:#EADFD9;
+    --ok:#3F7D4F;
+    --ok-bg:#E7F2E9;
+    --err:#B5493F;
+    --err-bg:#FBEBE8;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);
+    font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;
+    height:100%;}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:20px 18px 40px;}
+
+  header.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand img{width:34px;height:34px;border-radius:9px;}
+  .brand span{font-weight:700;font-size:17px;color:var(--rose-deep);}
+  button.icon-btn{background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;padding:6px;}
+
+  .screen{display:none;flex:1;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  h1{font-size:24px;margin:6px 0 8px;color:var(--rose-deep);}
+  p.sub{color:var(--ink-soft);font-size:15px;margin:0 0 24px;}
+
+  .big-btn{
+    background:var(--rose);color:#fff;border:none;border-radius:var(--radius);
+    padding:18px 20px;font-size:17px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;margin-bottom:12px;
+  }
+  .big-btn:active{transform:scale(0.98);}
+  .ghost-btn{
+    background:var(--paper);color:var(--rose-deep);border:1.5px solid var(--line);
+    border-radius:var(--radius);padding:16px 20px;font-size:15.5px;font-weight:600;cursor:pointer;
+    width:100%;margin-bottom:10px;
+  }
+  .link-btn{background:none;border:none;color:var(--ink-soft);font-size:14px;text-decoration:underline;cursor:pointer;padding:8px;}
+
+  .field-card{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 22px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;
+  }
+  .field-label{font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+  .field-prompt{font-size:19px;font-weight:600;margin-bottom:22px;color:var(--ink);}
+
+  .mic-wrap{display:flex;justify-content:center;margin-bottom:20px;}
+  .mic-btn{
+    width:88px;height:88px;border-radius:50%;background:var(--rose);border:none;color:#fff;
+    font-size:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 0 0 0 rgba(181,73,91,0.45);
+  }
+  .mic-btn.listening{animation:pulse 1.2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(181,73,91,0.45);}
+    70%{box-shadow:0 0 0 20px rgba(181,73,91,0);}
+    100%{box-shadow:0 0 0 0 rgba(181,73,91,0);}
+  }
+  .mic-status{font-size:13px;color:var(--ink-soft);margin-bottom:18px;min-height:16px;}
+
+  input, select{
+    width:100%;padding:14px 14px;border:1.5px solid var(--line);border-radius:12px;
+    font-size:17px;margin-bottom:14px;font-family:inherit;color:var(--ink);background:var(--paper);
+  }
+  input:focus, select:focus{outline:none;border-color:var(--rose);}
+
+  .field-actions{display:flex;gap:10px;margin-top:6px;}
+  .field-actions button{flex:1;}
+
+  .options-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;}
+  .option-chip{
+    border:1.5px solid var(--line);background:var(--paper);border-radius:20px;
+    padding:10px 16px;font-size:14.5px;cursor:pointer;color:var(--ink);
+  }
+  .option-chip.selected{background:var(--rose);color:#fff;border-color:var(--rose);}
+
+  .progress{display:flex;gap:5px;margin-bottom:18px;}
+  .progress span{flex:1;height:4px;border-radius:3px;background:var(--line);}
+  .progress span.done{background:var(--rose);}
+
+  .item-summary-card{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;margin-bottom:10px;
+  }
+  .item-summary-card .row{display:flex;justify-content:space-between;font-size:14.5px;padding:3px 0;}
+  .item-summary-card .row span:first-child{color:var(--ink-soft);}
+  .item-summary-card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .item-summary-card .top b{font-size:15.5px;}
+  .item-summary-card .top button{background:none;border:none;color:var(--rose);font-size:13px;cursor:pointer;text-decoration:underline;}
+
+  .summary-section-title{font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:18px 0 8px;}
+
+  .status-banner{
+    border-radius:12px;padding:14px 16px;font-size:14.5px;margin-bottom:16px;
+  }
+  .status-banner.ok{background:var(--ok-bg);color:var(--ok);}
+  .status-banner.err{background:var(--err-bg);color:var(--err);}
+
+  .settings-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;}
+  .settings-box label{font-size:13px;color:var(--ink-soft);display:block;margin-bottom:4px;}
+  .footnote{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon-192.png" alt="">
+      <span>Ventas por voz</span>
+    </div>
+    <button class="icon-btn" id="btnSettings" aria-label="Configuración">&#9881;</button>
+  </header>
+
+  <section class="screen active" id="screen-inicio">
+    <h1>Registrar una venta</h1>
+    <p class="sub">Te voy preguntando cada dato en voz alta. Puedes responder hablando o escribiendo.</p>
+    <button class="big-btn" id="btnNuevaVenta">&#127909; Nueva venta</button>
+    <p class="footnote" id="vendedoraStatus" style="margin-top:8px;"></p>
+    <p class="footnote" id="configStatus"></p>
+  </section>
+
+  <section class="screen" id="screen-settings">
+    <h1>Configuración</h1>
+    <p class="sub">Pega aquí la URL de tu Google Apps Script (ver guía de instalación) y la clave de seguridad.</p>
+    <div class="settings-box">
+      <label>Nombre de la vendedora que usa este teléfono</label>
+      <input type="text" id="cfgVendedora" placeholder="Ej: María Pérez">
+      <label>URL del Apps Script (Web App)</label>
+      <input type="text" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <label>Clave de seguridad (token)</label>
+      <input type="text" id="cfgToken" placeholder="La misma clave que pusiste en Code.gs">
+    </div>
+    <p class="footnote" style="margin-bottom:14px;">Cada teléfono se configura una sola vez con el nombre de quien lo usa. Todas las ventas de todas las vendedoras quedan en la misma hoja de cálculo.</p>
+    <button class="big-btn" id="btnGuardarConfig">Guardar</button>
+    <button class="ghost-btn" id="btnVolverInicio1">Volver</button>
+    <p class="footnote">Estos datos se guardan solo en este teléfono, dentro del navegador.</p>
+  </section>
+
+  <section class="screen" id="screen-buscar-cliente">
+    <h1>Datos de la compradora</h1>
+    <p class="sub">Si el cliente ya llenó el formulario por WhatsApp, búscalo aquí y no tendrás que volver a escribir sus datos.</p>
+    <input type="text" id="buscarClienteInput" placeholder="Número de documento o teléfono">
+    <button class="big-btn" id="btnBuscarCliente">Buscar cliente</button>
+    <div id="buscarClienteStatus"></div>
+    <div id="clienteEncontradoWrap" style="display:none;">
+      <div class="item-summary-card" id="clienteEncontradoCard"></div>
+      <button class="big-btn" id="btnUsarClienteEncontrado">Usar estos datos</button>
+    </div>
+    <button class="ghost-btn" id="btnContinuarSinBuscar">No encontrado / continuar manualmente</button>
+  </section>
+
+  <section class="screen" id="screen-field">
+    <div class="progress" id="progressBar"></div>
+    <div class="field-card">
+      <div class="field-label" id="fieldGroupLabel">Referencia</div>
+      <div class="field-prompt" id="fieldPromptText">¿Cuál es el código de la referencia?</div>
+
+      <div class="mic-wrap"><button class="mic-btn" id="btnMic">&#127908;</button></div>
+      <div class="mic-status" id="micStatus">Toca el micrófono para hablar</div>
+
+      <div id="optionsContainer"></div>
+      <input type="text" id="fieldInput" placeholder="Escribe aquí o usa el micrófono">
+
+      <div id="fileFieldWrap" style="display:none;">
+        <input type="file" id="fieldFileInput" accept="image/*" capture="environment">
+        <div id="filePreviewWrap" style="display:none;margin-top:12px;">
+          <img id="fieldFilePreview" style="max-width:100%;border-radius:12px;border:1px solid var(--line);">
+          <button type="button" class="link-btn" id="btnQuitarComprobante">Quitar foto</button>
+        </div>
+      </div>
+    </div>
+    <div class="field-actions">
+      <button class="ghost-btn" id="btnFieldBack">Atrás</button>
+      <button class="big-btn" id="btnFieldNext">Siguiente</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-otro-item">
+    <h1>¿Otra referencia?</h1>
+    <p class="sub">¿La clienta llevó otra referencia distinta en esta misma venta?</p>
+    <button class="big-btn" id="btnOtroItemSi">Sí, agregar otra referencia</button>
+    <button class="ghost-btn" id="btnOtroItemNo">No, continuar con los datos de la compradora</button>
+  </section>
+
+  <section class="screen" id="screen-resumen">
+    <h1>Resumen de la venta</h1>
+    <p class="sub">Revisa que todo esté correcto antes de guardar.</p>
+
+    <div class="summary-section-title">Productos</div>
+    <div id="itemsList"></div>
+
+    <div class="summary-section-title">Vendedora</div>
+    <div class="item-summary-card" id="vendedoraSummaryCard"></div>
+
+    <div class="summary-section-title">Datos de la compradora</div>
+    <div class="item-summary-card" id="buyerSummaryCard"></div>
+
+    <div class="summary-section-title">Comprobante de pago</div>
+    <div class="item-summary-card" id="comprobanteSummaryCard"></div>
+
+    <div id="saveStatus"></div>
+
+    <button class="big-btn" id="btnConfirmarGuardar">Confirmar y guardar</button>
+    <button class="ghost-btn" id="btnAgregarMas">Agregar otra referencia</button>
+    <button class="link-btn" id="btnCancelarVenta">Cancelar esta venta</button>
+  </section>
+
+  <section class="screen" id="screen-exito">
+    <h1>&#10004; Venta guardada</h1>
+    <p class="sub">El registro quedó guardado en la hoja de cálculo.</p>
+    <button class="big-btn" id="btnNuevaVentaDesdeExito">Registrar otra venta</button>
+  </section>
+
+</div>
+
+<script>
+(function(){
+
+  var itemFields = [
+    { id:'referencia', label:'Referencia', prompt:'¿Cuál es el código de la referencia?', type:'text' },
+    { id:'color', label:'Color', prompt:'¿De qué color es?', type:'text' },
+    { id:'talla', label:'Talla', prompt:'¿Qué talla es?', type:'text' },
+    { id:'cantidad', label:'Cantidad', prompt:'¿Cuántos pares de esta referencia lleva?', type:'number' },
+    { id:'valor', label:'Valor', prompt:'¿Cuál es el valor de este producto?', type:'number' }
+  ];
+
+  var buyerFields = [
+    { id:'nombre', label:'Nombre de la compradora', prompt:'¿Cuál es el nombre de quien compra?', type:'text' },
+    { id:'tipo_identificacion', label:'Tipo de identificación', prompt:'¿Qué tipo de identificación tiene? Diga cédula de ciudadanía, cédula de extranjería, NIT, pasaporte u otro', type:'select', options:['Cédula de ciudadanía','Cédula de extranjería','NIT','Pasaporte','Otro'] },
+    { id:'numero_identificacion', label:'Número de identificación', prompt:'¿Cuál es el número de identificación?', type:'text' },
+    { id:'telefono', label:'Teléfono', prompt:'¿Cuál es su número de teléfono?', type:'text' },
+    { id:'correo', label:'Correo electrónico', prompt:'¿Cuál es su correo electrónico?', type:'text' },
+    { id:'direccion', label:'Dirección', prompt:'¿Cuál es su dirección?', type:'text' },
+    { id:'ciudad', label:'Ciudad', prompt:'¿En qué ciudad vive?', type:'text' },
+    { id:'tipo_pago', label:'Tipo de pago', prompt:'¿Cómo pagó? Diga efectivo, transferencia o tarjeta', type:'select', options:['Efectivo','Transferencia','Tarjeta'] },
+    { id:'comprobante', label:'Comprobante de pago', prompt:'Si tiene comprobante de pago puede tomarle una foto. Si pagó en efectivo, toca Siguiente para continuar sin foto.', type:'file', required:false },
+    { id:'fecha', label:'Fecha de compra', prompt:'La fecha de compra, ¿es hoy o una fecha distinta?', type:'date' }
+  ];
+
+  var state = {
+    items: [],
+    currentItem: {},
+    buyer: {},
+    fieldQueue: [],
+    fieldIndex: 0,
+    mode: 'item'
+  };
+
+  var screens = {};
+  document.querySelectorAll('.screen').forEach(function(s){ screens[s.id] = s; });
+  function showScreen(id){
+    Object.keys(screens).forEach(function(k){ screens[k].classList.remove('active'); });
+    screens[id].classList.add('active');
+  }
+
+  function speak(text){
+    try{
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-CO';
+      u.rate = 1;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognition = null;
+  if (Recognition){
+    recognition = new Recognition();
+    recognition.lang = 'es-CO';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+  }
+
+  function todayISO(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+
+  // ---------- CONFIG ----------
+  function loadConfig(){
+    return {
+      url: localStorage.getItem('vv_url') || '',
+      token: localStorage.getItem('vv_token') || '',
+      vendedora: localStorage.getItem('vv_vendedora') || ''
+    };
+  }
+  function refreshConfigStatus(){
+    var cfg = loadConfig();
+    document.getElementById('configStatus').textContent = cfg.url ? '' : 'Falta configurar la conexión con la hoja de cálculo (icono de ajustes arriba).';
+    document.getElementById('vendedoraStatus').textContent = cfg.vendedora ? 'Registrando como: ' + cfg.vendedora : 'Falta indicar el nombre de la vendedora (icono de ajustes arriba).';
+  }
+  refreshConfigStatus();
+
+  document.getElementById('btnSettings').addEventListener('click', function(){
+    var cfg = loadConfig();
+    document.getElementById('cfgUrl').value = cfg.url;
+    document.getElementById('cfgToken').value = cfg.token;
+    document.getElementById('cfgVendedora').value = cfg.vendedora;
+    showScreen('screen-settings');
+  });
+  document.getElementById('btnVolverInicio1').addEventListener('click', function(){ showScreen('screen-inicio'); });
+  document.getElementById('btnGuardarConfig').addEventListener('click', function(){
+    localStorage.setItem('vv_url', document.getElementById('cfgUrl').value.trim());
+    localStorage.setItem('vv_token', document.getElementById('cfgToken').value.trim());
+    localStorage.setItem('vv_vendedora', document.getElementById('cfgVendedora').value.trim());
+    refreshConfigStatus();
+    showScreen('screen-inicio');
+  });
+
+  // ---------- FLOW START ----------
+  document.getElementById('btnNuevaVenta').addEventListener('click', startNewSale);
+  document.getElementById('btnNuevaVentaDesdeExito').addEventListener('click', startNewSale);
+
+  function startNewSale(){
+    var cfg = loadConfig();
+    if (!cfg.vendedora){
+      alert('Primero indica el nombre de la vendedora en Ajustes.');
+      showScreen('screen-settings');
+      return;
+    }
+    state.items = [];
+    state.currentItem = {};
+    state.buyer = {};
+    startItemWizard();
+  }
+
+  function startItemWizard(){
+    state.mode = 'item';
+    state.currentItem = {};
+    state.fieldQueue = itemFields.slice();
+    state.fieldIndex = 0;
+    renderField();
+    showScreen('screen-field');
+  }
+
+  function startBuyerWizard(){
+    document.getElementById('buscarClienteInput').value = '';
+    document.getElementById('buscarClienteStatus').innerHTML = '';
+    document.getElementById('clienteEncontradoWrap').style.display = 'none';
+    showScreen('screen-buscar-cliente');
+  }
+
+  function startBuyerFieldWizard(camposIniciales){
+    state.mode = 'buyer';
+    state.fieldQueue = buyerFields.filter(function(f){ return camposIniciales.indexOf(f.id) === -1; });
+    state.fieldIndex = 0;
+    renderField();
+    showScreen('screen-field');
+  }
+
+  // ---------- FIELD SCREEN ----------
+  var micBtn = document.getElementById('btnMic');
+  var fieldInput = document.getElementById('fieldInput');
+  var micStatus = document.getElementById('micStatus');
+  var optionsContainer = document.getElementById('optionsContainer');
+
+  function currentField(){ return state.fieldQueue[state.fieldIndex]; }
+
+  function renderField(){
+    var f = currentField();
+    document.getElementById('fieldGroupLabel').textContent = (state.mode === 'item' ? 'Producto' : 'Compradora');
+    document.getElementById('fieldPromptText').textContent = f.prompt;
+
+    var progress = document.getElementById('progressBar');
+    progress.innerHTML = '';
+    state.fieldQueue.forEach(function(_, i){
+      var s = document.createElement('span');
+      if (i <= state.fieldIndex) s.className = 'done';
+      progress.appendChild(s);
+    });
+
+    var target = (state.mode === 'item') ? state.currentItem : state.buyer;
+    var existing = target[f.id] || '';
+
+    optionsContainer.innerHTML = '';
+    fieldInput.style.display = 'block';
+    document.getElementById('fileFieldWrap').style.display = 'none';
+
+    if (f.type === 'select'){
+      fieldInput.style.display = 'none';
+      f.options.forEach(function(opt){
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'option-chip' + (existing === opt ? ' selected' : '');
+        chip.textContent = opt;
+        chip.addEventListener('click', function(){
+          target[f.id] = opt;
+          Array.prototype.forEach.call(optionsContainer.children, function(c){ c.classList.remove('selected'); });
+          chip.classList.add('selected');
+        });
+        optionsContainer.appendChild(chip);
+      });
+    } else if (f.type === 'file'){
+      fieldInput.style.display = 'none';
+      document.getElementById('fileFieldWrap').style.display = 'block';
+      var preview = document.getElementById('fieldFilePreview');
+      var previewWrap = document.getElementById('filePreviewWrap');
+      if (target.comprobante_base64){
+        preview.src = target.comprobante_base64;
+        previewWrap.style.display = 'block';
+      } else {
+        previewWrap.style.display = 'none';
+      }
+    } else if (f.type === 'date'){
+      fieldInput.type = 'date';
+      fieldInput.value = existing || todayISO();
+    } else if (f.type === 'number'){
+      fieldInput.type = 'number';
+      fieldInput.value = existing;
+      fieldInput.placeholder = 'Escribe aquí o usa el micrófono';
+    } else {
+      fieldInput.type = 'text';
+      fieldInput.value = existing;
+      fieldInput.placeholder = 'Escribe aquí o usa el micrófono';
+    }
+
+    micStatus.textContent = recognition ? 'Toca el micrófono para hablar' : 'Este navegador no soporta dictado por voz, escribe el dato';
+    micBtn.style.display = (recognition && f.type !== 'file') ? 'flex' : 'none';
+    document.querySelector('.mic-wrap').style.display = (f.type === 'file') ? 'none' : 'flex';
+    if (f.type === 'file') micStatus.textContent = 'Este paso es opcional, puedes continuar sin adjuntar nada';
+
+    speak(f.prompt);
+  }
+
+  function palabrasANumero(texto){
+    var t = texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+    var unidades = {
+      'cero':0,'un':1,'uno':1,'una':1,'dos':2,'tres':3,'cuatro':4,'cinco':5,'seis':6,'siete':7,'ocho':8,'nueve':9,
+      'diez':10,'once':11,'doce':12,'trece':13,'catorce':14,'quince':15,
+      'dieciseis':16,'diecisiete':17,'dieciocho':18,'diecinueve':19,
+      'veinte':20,'veintiun':21,'veintiuno':21,'veintiuna':21,'veintidos':22,'veintitres':23,'veinticuatro':24,
+      'veinticinco':25,'veintiseis':26,'veintisiete':27,'veintiocho':28,'veintinueve':29
+    };
+    var decenas = { 'treinta':30,'cuarenta':40,'cincuenta':50,'sesenta':60,'setenta':70,'ochenta':80,'noventa':90 };
+    var centenas = {
+      'cien':100,'ciento':100,'doscientos':200,'doscientas':200,'trescientos':300,'trescientas':300,
+      'cuatrocientos':400,'cuatrocientas':400,'quinientos':500,'quinientas':500,'seiscientos':600,'seiscientas':600,
+      'setecientos':700,'setecientas':700,'ochocientos':800,'ochocientas':800,'novecientos':900,'novecientas':900
+    };
+
+    var palabras = t.split(/\s+/).filter(Boolean);
+    var total = 0, actual = 0, encontrado = false;
+
+    palabras.forEach(function(w){
+      w = w.replace(/[^a-z]/g, '');
+      if (!w || w === 'y' || w === 'pesos' || w === 'peso') return;
+      if (w === 'mil'){
+        actual = (actual === 0 ? 1 : actual) * 1000;
+        total += actual;
+        actual = 0;
+        encontrado = true;
+      } else if (centenas.hasOwnProperty(w)){
+        actual += centenas[w]; encontrado = true;
+      } else if (decenas.hasOwnProperty(w)){
+        actual += decenas[w]; encontrado = true;
+      } else if (unidades.hasOwnProperty(w)){
+        actual += unidades[w]; encontrado = true;
+      }
+    });
+    total += actual;
+
+    if (encontrado) return String(total);
+
+    // si no se reconocieron palabras numéricas, se toma lo que ya venga en dígitos
+    return t.replace(/[^0-9.,]/g, '').replace(',', '.');
+  }
+
+  micBtn.addEventListener('click', function(){
+    if (!recognition) return;
+    micBtn.classList.add('listening');
+    micStatus.textContent = 'Escuchando...';
+    try{ recognition.start(); }catch(e){}
+  });
+
+  if (recognition){
+    recognition.onresult = function(event){
+      var transcript = event.results[0][0].transcript;
+      var f = currentField();
+      if (f.type === 'select'){
+        var match = f.options.find(function(o){ return transcript.toLowerCase().indexOf(o.toLowerCase()) > -1; });
+        if (match){
+          var target = (state.mode === 'item') ? state.currentItem : state.buyer;
+          target[f.id] = match;
+          renderField();
+        } else {
+          micStatus.textContent = 'No identifiqué la opción, intenta de nuevo o toca una opción';
+        }
+      } else if (f.type === 'number'){
+        var num = palabrasANumero(transcript);
+        fieldInput.value = num;
+        micStatus.textContent = 'Transcrito: "' + transcript + '" → ' + num + '. Corrígelo si quedó mal.';
+      } else {
+        fieldInput.value = transcript;
+        micStatus.textContent = 'Transcrito: "' + transcript + '". Corrígelo si quedó mal.';
+      }
+    };
+    recognition.onerror = function(){
+      micStatus.textContent = 'No se pudo escuchar, intenta de nuevo o escribe el dato';
+    };
+    recognition.onend = function(){
+      micBtn.classList.remove('listening');
+    };
+  }
+
+  function compressImageToDataUrl(file, maxWidth, quality){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var scale = Math.min(1, maxWidth / img.width);
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('fieldFileInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    var target = (state.mode === 'item') ? state.currentItem : state.buyer;
+    micStatus.textContent = 'Procesando la foto...';
+    compressImageToDataUrl(file, 1000, 0.7).then(function(dataUrl){
+      target.comprobante_base64 = dataUrl;
+      target.comprobante_nombre = file.name;
+      target.comprobante = file.name;
+      document.getElementById('fieldFilePreview').src = dataUrl;
+      document.getElementById('filePreviewWrap').style.display = 'block';
+      micStatus.textContent = 'Foto lista';
+    }).catch(function(){
+      micStatus.textContent = 'No se pudo procesar la foto, intenta de nuevo';
+    });
+  });
+
+  document.getElementById('btnQuitarComprobante').addEventListener('click', function(){
+    var target = (state.mode === 'item') ? state.currentItem : state.buyer;
+    delete target.comprobante_base64;
+    delete target.comprobante_nombre;
+    delete target.comprobante;
+    document.getElementById('fieldFileInput').value = '';
+    document.getElementById('filePreviewWrap').style.display = 'none';
+  });
+
+  document.getElementById('btnFieldBack').addEventListener('click', function(){
+    saveCurrentFieldValue();
+    if (state.fieldIndex > 0){
+      state.fieldIndex--;
+      renderField();
+    } else if (state.mode === 'buyer'){
+      showScreen('screen-buscar-cliente');
+    } else {
+      showScreen('screen-inicio');
+    }
+  });
+
+  document.getElementById('btnFieldNext').addEventListener('click', function(){
+    saveCurrentFieldValue();
+    var f = currentField();
+    var target = (state.mode === 'item') ? state.currentItem : state.buyer;
+    if (f.required !== false && !target[f.id] && target[f.id] !== 0){
+      micStatus.textContent = 'Este dato es obligatorio, dilo o escríbelo antes de continuar.';
+      return;
+    }
+    if (state.fieldIndex < state.fieldQueue.length - 1){
+      state.fieldIndex++;
+      renderField();
+    } else {
+      if (state.mode === 'item'){
+        state.items.push(state.currentItem);
+        showScreen('screen-otro-item');
+      } else {
+        renderResumen();
+        showScreen('screen-resumen');
+      }
+    }
+  });
+
+  function saveCurrentFieldValue(){
+    var f = currentField();
+    if (f.type === 'select' || f.type === 'file') return;
+    var target = (state.mode === 'item') ? state.currentItem : state.buyer;
+    target[f.id] = fieldInput.value.trim();
+  }
+
+  // ---------- BUSCAR CLIENTE (autocompletar desde el formulario de WhatsApp) ----------
+  document.getElementById('btnBuscarCliente').addEventListener('click', function(){
+    var cfg = loadConfig();
+    var valor = document.getElementById('buscarClienteInput').value.trim();
+    var statusEl = document.getElementById('buscarClienteStatus');
+    document.getElementById('clienteEncontradoWrap').style.display = 'none';
+
+    if (!cfg.url){
+      statusEl.innerHTML = '<div class="status-banner err">Falta configurar la conexión (icono de ajustes).</div>';
+      return;
+    }
+    if (!valor){
+      statusEl.innerHTML = '<div class="status-banner err">Escribe un número de documento o teléfono para buscar.</div>';
+      return;
+    }
+
+    statusEl.innerHTML = '<div class="status-banner ok">Buscando...</div>';
+
+    var url = cfg.url + '?accion=buscar_cliente&token=' + encodeURIComponent(cfg.token) + '&valor=' + encodeURIComponent(valor);
+    fetch(url).then(function(res){ return res.json(); }).then(function(data){
+      if (data && data.status === 'ok' && data.found){
+        statusEl.innerHTML = '';
+        var c = data.cliente;
+        state.clienteEncontrado = c;
+        document.getElementById('clienteEncontradoCard').innerHTML =
+          '<div class="row"><span>Nombre</span><span>' + escapeHtml(c.nombre||'') + '</span></div>' +
+          '<div class="row"><span>Identificación</span><span>' + escapeHtml((c.tipo_identificacion||'') + ' ' + (c.numero_identificacion||'')) + '</span></div>' +
+          '<div class="row"><span>Teléfono</span><span>' + escapeHtml(c.telefono||'') + '</span></div>' +
+          '<div class="row"><span>Ciudad</span><span>' + escapeHtml(c.ciudad||'') + '</span></div>';
+        document.getElementById('clienteEncontradoWrap').style.display = 'block';
+      } else if (data && data.status === 'ok'){
+        statusEl.innerHTML = '<div class="status-banner err">No se encontró ningún cliente con ese dato. Puedes continuar manualmente.</div>';
+      } else {
+        statusEl.innerHTML = '<div class="status-banner err">' + (data && data.message ? escapeHtml(data.message) : 'Error al buscar.') + '</div>';
+      }
+    }).catch(function(){
+      statusEl.innerHTML = '<div class="status-banner err">Sin conexión. Intenta de nuevo o continúa manualmente.</div>';
+    });
+  });
+
+  document.getElementById('btnUsarClienteEncontrado').addEventListener('click', function(){
+    var c = state.clienteEncontrado || {};
+    state.buyer.nombre = c.nombre || '';
+    state.buyer.tipo_identificacion = c.tipo_identificacion || '';
+    state.buyer.numero_identificacion = c.numero_identificacion || '';
+    state.buyer.telefono = c.telefono || '';
+    state.buyer.correo = c.correo || '';
+    state.buyer.direccion = c.direccion || '';
+    state.buyer.ciudad = c.ciudad || '';
+    startBuyerFieldWizard(['nombre','tipo_identificacion','numero_identificacion','telefono','correo','direccion','ciudad']);
+  });
+
+  document.getElementById('btnContinuarSinBuscar').addEventListener('click', function(){
+    startBuyerFieldWizard([]);
+  });
+
+  // ---------- OTRO ITEM ----------
+  document.getElementById('btnOtroItemSi').addEventListener('click', startItemWizard);
+  document.getElementById('btnOtroItemNo').addEventListener('click', startBuyerWizard);
+
+  // ---------- RESUMEN ----------
+  document.getElementById('btnAgregarMas').addEventListener('click', startItemWizard);
+  document.getElementById('btnCancelarVenta').addEventListener('click', function(){
+    if (confirm('¿Cancelar esta venta? Se perderá lo capturado.')){
+      showScreen('screen-inicio');
+    }
+  });
+
+  function renderResumen(){
+    var itemsList = document.getElementById('itemsList');
+    itemsList.innerHTML = '';
+    state.items.forEach(function(item, idx){
+      var card = document.createElement('div');
+      card.className = 'item-summary-card';
+      card.innerHTML =
+        '<div class="top"><b>' + escapeHtml(item.referencia || '(sin código)') + '</b>' +
+        '<button data-idx="' + idx + '" class="edit-item">Editar</button></div>' +
+        '<div class="row"><span>Color</span><span>' + escapeHtml(item.color||'') + '</span></div>' +
+        '<div class="row"><span>Talla</span><span>' + escapeHtml(item.talla||'') + '</span></div>' +
+        '<div class="row"><span>Cantidad</span><span>' + escapeHtml(String(item.cantidad||'')) + '</span></div>' +
+        '<div class="row"><span>Valor</span><span>' + escapeHtml(String(item.valor||'')) + '</span></div>';
+      itemsList.appendChild(card);
+    });
+    Array.prototype.forEach.call(itemsList.querySelectorAll('.edit-item'), function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        state.currentItem = state.items[idx];
+        state.items.splice(idx, 1);
+        state.mode = 'item';
+        state.fieldQueue = itemFields.slice();
+        state.fieldIndex = 0;
+        renderField();
+        showScreen('screen-field');
+      });
+    });
+
+    var cfg = loadConfig();
+    document.getElementById('vendedoraSummaryCard').innerHTML =
+      '<div class="row"><span>Registrada por</span><span>' + escapeHtml(cfg.vendedora||'') + '</span></div>';
+
+    var b = state.buyer;
+    document.getElementById('buyerSummaryCard').innerHTML =
+      '<div class="row"><span>Nombre</span><span>' + escapeHtml(b.nombre||'') + '</span></div>' +
+      '<div class="row"><span>Tipo identificación</span><span>' + escapeHtml(b.tipo_identificacion||'') + '</span></div>' +
+      '<div class="row"><span>Número identificación</span><span>' + escapeHtml(b.numero_identificacion||'') + '</span></div>' +
+      '<div class="row"><span>Teléfono</span><span>' + escapeHtml(b.telefono||'') + '</span></div>' +
+      '<div class="row"><span>Correo</span><span>' + escapeHtml(b.correo||'') + '</span></div>' +
+      '<div class="row"><span>Dirección</span><span>' + escapeHtml(b.direccion||'') + '</span></div>' +
+      '<div class="row"><span>Ciudad</span><span>' + escapeHtml(b.ciudad||'') + '</span></div>' +
+      '<div class="row"><span>Tipo de pago</span><span>' + escapeHtml(b.tipo_pago||'') + '</span></div>' +
+      '<div class="row"><span>Fecha</span><span>' + escapeHtml(b.fecha||'') + '</span></div>';
+
+    document.getElementById('comprobanteSummaryCard').innerHTML = b.comprobante_base64
+      ? '<div class="row"><span>Adjuntó foto</span><span>Sí</span></div><img src="' + b.comprobante_base64 + '" style="max-width:100%;border-radius:10px;margin-top:8px;">'
+      : '<div class="row"><span>Adjuntó foto</span><span>No (pagó en efectivo u otro medio)</span></div>';
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(m){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m];
+    });
+  }
+
+  // ---------- GUARDAR ----------
+  document.getElementById('btnConfirmarGuardar').addEventListener('click', function(){
+    var cfg = loadConfig();
+    var statusEl = document.getElementById('saveStatus');
+    if (!cfg.url){
+      statusEl.innerHTML = '<div class="status-banner err">Falta configurar la conexión (icono de ajustes).</div>';
+      return;
+    }
+    statusEl.innerHTML = '<div class="status-banner ok">Guardando...</div>';
+
+    var payload = {
+      token: cfg.token,
+      venta_id: 'V-' + Date.now(),
+      vendedora: cfg.vendedora,
+      comprador: state.buyer,
+      comprobante_base64: state.buyer.comprobante_base64 || '',
+      comprobante_nombre: state.buyer.comprobante_nombre || '',
+      items: state.items
+    };
+
+    fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).then(function(res){ return res.json(); })
+      .then(function(data){
+        if (data && data.status === 'ok'){
+          showScreen('screen-exito');
+        } else {
+          statusEl.innerHTML = '<div class="status-banner err">' + (data && data.message ? escapeHtml(data.message) : 'No se pudo guardar. Intenta de nuevo.') + '</div>';
+        }
+      }).catch(function(){
+        statusEl.innerHTML = '<div class="status-banner err">Sin conexión o error al guardar. Verifica el internet e intenta de nuevo.</div>';
+      });
+  });
+
+  if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+
+})();
+</script>
+</body>
+</html>
