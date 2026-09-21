@@ -180,7 +180,7 @@
       <input type="text" id="fieldInput" placeholder="Escribe aquí o usa el micrófono">
 
       <div id="fileFieldWrap" style="display:none;">
-        <input type="file" id="fieldFileInput" accept="image/*" capture="environment">
+        <input type="file" id="fieldFileInput" accept="image/*">
         <div id="filePreviewWrap" style="display:none;margin-top:12px;">
           <img id="fieldFilePreview" style="max-width:100%;border-radius:12px;border:1px solid var(--line);">
           <button type="button" class="link-btn" id="btnQuitarComprobante">Quitar foto</button>
@@ -438,7 +438,7 @@
     micStatus.textContent = recognition ? 'Toca el micrófono para hablar' : 'Este navegador no soporta dictado por voz, escribe el dato';
     micBtn.style.display = (recognition && f.type !== 'file') ? 'flex' : 'none';
     document.querySelector('.mic-wrap').style.display = (f.type === 'file') ? 'none' : 'flex';
-    if (f.type === 'file') micStatus.textContent = 'Este paso es opcional, puedes continuar sin adjuntar nada';
+    if (f.type === 'file') micStatus.textContent = 'Puedes tomar una foto o elegir el comprobante de tu galería. Este paso es opcional.';
 
     speak(f.prompt);
   }
